@@ -1,6 +1,6 @@
 """
 イベント来場者カウンター
-YOLOv8 + OpenCV を使ったリアルタイム人数計測
+YOLOv8 + OpenCV を使ったリアルタイム人数計測 (縦線バージョン)
 """
  
 import cv2
@@ -29,11 +29,12 @@ LINE_COLOR = (0, 255, 255)
  
  
 def draw_ui(frame: np.ndarray, enter: int, exit_: int, current: int,
-            line_y: int) -> np.ndarray:
+            line_x: int) -> np.ndarray:
     h, w = frame.shape[:2]
  
-    cv2.line(frame, (0, line_y), (w, line_y), LINE_COLOR, 2)
-    cv2.putText(frame, "COUNT LINE", (10, line_y - 8),
+    # 縦線を引く (X座標を固定して、Yを0からhまで引く)
+    cv2.line(frame, (line_x, 0), (line_x, h), LINE_COLOR, 2)
+    cv2.putText(frame, "COUNT LINE", (line_x + 10, 20),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, LINE_COLOR, 1)
  
     overlay = frame.copy()
@@ -42,7 +43,7 @@ def draw_ui(frame: np.ndarray, enter: int, exit_: int, current: int,
  
     texts = [
         (f"Enter : {enter}",  (0, 255, 80)),
-        (f"Exit : {exit_}",  (0, 100, 255)),
+        (f"Exit  : {exit_}",  (0, 100, 255)),
         (f"Current : {current}", (255, 220, 0)),
     ]
     for i, (text, color) in enumerate(texts):
@@ -80,7 +81,8 @@ def run(source=DEFAULT_SOURCE,
         raise RuntimeError("最初のフレームを取得できません")
  
     h, w = frame.shape[:2]
-    line_y = h // 2
+    # 画面の幅の半分を縦線のX座標とする
+    line_x = w // 2
  
     writer = None
     if save_video:
@@ -126,13 +128,16 @@ def run(source=DEFAULT_SOURCE,
                     track_history[tid].pop(0)
  
                 if tid not in crossed_ids and len(track_history[tid]) >= 2:
-                    prev_cy = track_history[tid][-2][1]
-                    curr_cy = track_history[tid][-1][1]
+                    # Y座標ではなく、X座標(インデックス0)を取得して比較する
+                    prev_cx = track_history[tid][-2][0]
+                    curr_cx = track_history[tid][-1][0]
  
-                    if prev_cy < line_y <= curr_cy:
+                    # 左から右へ移動したら入場 (Enter)
+                    if prev_cx > line_x >= curr_cx:
                         enter_count += 1
                         crossed_ids.add(tid)
-                    elif prev_cy > line_y >= curr_cy:
+                    # 右から左へ移動したら退場 (Exit)
+                    elif prev_cx < line_x <= curr_cx:
                         exit_count += 1
                         crossed_ids.add(tid)
  
@@ -145,7 +150,7 @@ def run(source=DEFAULT_SOURCE,
                     cv2.line(frame, pts[j - 1], pts[j], (200, 200, 200), 1)
  
         frame = draw_ui(frame, enter_count, exit_count,
-                        enter_count - exit_count, line_y)
+                        enter_count - exit_count, line_x)
  
         if show:
             cv2.imshow("People Counter [q:quit]", frame)
@@ -161,9 +166,9 @@ def run(source=DEFAULT_SOURCE,
     cv2.destroyAllWindows()
  
     print("\n===== 計測結果 =====")
-    print(f"  入場人数    : {enter_count}")
-    print(f"  退場人数    : {exit_count}")
-    print(f"  最終在場人数: {enter_count - exit_count}")
+    print(f"  Enter : {enter_count}")
+    print(f"  Exit  : {exit_count}")
+    print(f"  Current : {enter_count - exit_count}")
  
  
 # ── CLI ─────────────────────────────────────────────────────────────────────
