@@ -11,13 +11,8 @@ import numpy as np
  
  
 # ── 設定 ────────────────────────────────────────────────────────────────────
-# ▼▼▼ iPhoneのIPアドレスをここに入れる ▼▼▼
-#IPHONE_IP   = "10.16.45.122"      # ← IP Camera Lite に表示されるIPに変更
-#IPHONE_PORT = 554                 # RTSPポート（IP Camera Lite のデフォルト）
- 
 # ▼ 使用するソースをここで切り替える
-DEFAULT_SOURCE = 0      # iPhoneカメラを使う場合
-#DEFAULT_SOURCE = 1      # PCの内蔵カメラを使う場合はこちら
+DEFAULT_SOURCE = 1 # 設定はREAD ME参照
 # ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
  
 DEFAULT_MODEL    = "yolov8n.pt"
@@ -180,7 +175,7 @@ if __name__ == "__main__":
     parser.add_argument("--save",    action="store_true")
     args = parser.parse_args()
  
-    # --ip が指定されたら RTSP URL を自動生成
+    # --ip が指定されたら RTSP URL を自動生成→RTSP未使用
     source = args.source
     if args.ip:
         source = f"rtsp://{args.ip}:{IPHONE_PORT}/live"
