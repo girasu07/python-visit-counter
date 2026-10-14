@@ -1,0 +1,1 @@
+{"name":"gidaisai-counter-cloud","private":true,"type":"module","scripts":{"deploy":"wrangler deploy","check":"node --check src/index.js","test":"node --test test.mjs"},"dependencies":{"jose":"^6.0.0"},"devDependencies":{"wrangler":"^4.0.0"},"allowScripts":{"esbuild@0.28.2":true,"fsevents@2.3.3":true,"workerd@1.20261006.1":true}}

@@ -8,7 +8,7 @@ os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp"
 import cv2
 
 password = quote(getpass("カメラのパスワード（入力は表示されません）: "), safe="")
-url = f"rtsp://admin:{password}@192.168.0.180:554/live/sub"
+url = f"rtsp://admin:{password}@192.168.0.181:554/live/sub"
 
 cap = cv2.VideoCapture(url, cv2.CAP_FFMPEG)
 

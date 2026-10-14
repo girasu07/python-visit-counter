@@ -1,0 +1,36 @@
+{
+	"name": "gidaisai-counter",
+	"main": "src/index.js",
+	"compatibility_date": "2026-10-01",
+	"workers_dev": false,
+	"preview_urls": false,
+	"routes": [
+		{
+			"pattern": "counter.girasu.dev",
+			"custom_domain": true
+		},
+		{
+			"pattern": "counter-ingest.girasu.dev",
+			"custom_domain": true
+		}
+	],
+	"vars": {
+		"VIEW_HOST": "counter.girasu.dev",
+		"INGEST_HOST": "counter-ingest.girasu.dev",
+		"TEAM_DOMAIN": "https://REPLACE.cloudflareaccess.com",
+		"ACCESS_AUD": "REPLACE"
+	},
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "gidaisai-counter",
+			"database_id": "REPLACE",
+			"migrations_dir": "migrations"
+		},
+		{
+			"binding": "B",
+			"database_name": "gidaisai-counter",
+			"database_id": "0a0996ac-2243-42d5-8837-84ce876ca1de"
+		}
+	]
+}
