@@ -7,6 +7,9 @@ YOLOv8 + OpenCV を使ったリアルタイム人数計測 (縦線バージョ�
 """
 
 import argparse
+import os
+import subprocess
+import sys
 
 from collections import defaultdict
 
@@ -341,7 +344,7 @@ def run(source=DEFAULT_SOURCE,
 
                         if prev_cx > line_x >= curr_cx:
 
-                            counts = store.record("enter")
+                            counts = store.record("exit")
 
                             enter_count, exit_count = counts["enter"], counts["exit"]
 
@@ -351,7 +354,7 @@ def run(source=DEFAULT_SOURCE,
 
                         elif prev_cx < line_x <= curr_cx:
 
-                            counts = store.record("exit")
+                            counts = store.record("enter")
 
                             enter_count, exit_count = counts["enter"], counts["exit"]
 
@@ -524,57 +527,13 @@ class CountStore:
 
             self.db.close()
 
-PAGE = '''<!doctype html><html lang="ja"><meta charset="utf-8">
-
-<meta name="viewport" content="width=device-width,initial-scale=1"><title>岐大祭 人数カウンター</title>
-
-<style>body{font-family:system-ui,sans-serif;background:#f3f5fa;color:#172238;margin:0;padding:24px}main{max-width:650px;margin:auto}h1{font-size:24px}.card{background:white;border-radius:16px;padding:24px;margin:16px 0;border:1px solid #dce2ed}.big{font-size:64px;font-weight:750;color:#2555b8} .row{display:flex;gap:32px}.row strong{font-size:30px}p{line-height:1.7}small{color:#526078}#connection{font-weight:bold}</style>
-
-<main><h1>岐大祭 人数カウンター</h1><p id="date">接続中…</p>
-
-<div class="card">推定滞在人数<div class="big"><span id="current">—</span><small> 人</small></div>
-
-<div class="row"><div>累計入場<br><strong id="enter">—</strong> 人</div><div>累計退場<br><strong id="exit">—</strong> 人</div></div></div>
-
-<div class="card"><p id="connection">取得中</p><p id="status">—</p><small>最終映像処理：<span id="frame">—</span><br>最終入退場記録：<span id="event">—</span><br>表示更新：<span id="updated">—</span></small></div>
-
-<p><small>滞在人数は当日の入場−退場の推定値です。開始前の在場者や他の出入口は含みません。誤差によって負の値になる場合があります。</small></p></main>
-
-<script>
-
-const el=id=>document.getElementById(id);
-
-const stamp=s=>s?new Date(s).toLocaleString('ja-JP',{timeZone:'Asia/Tokyo'}):'記録なし';
-
-async function refresh(){
-
- const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),5000);
-
- try { const r=await fetch('/api/counts',{cache:'no-store',signal:controller.signal});if(!r.ok)throw Error();const d=await r.json();
-
- for(const k of ['enter','exit','current'])el(k).textContent=d[k].toLocaleString('ja-JP');
-
- el('date').textContent=d.date+'（日本時間）';el('frame').textContent=stamp(d.last_frame);el('event').textContent=stamp(d.last_event);el('updated').textContent=stamp(d.server_time);
-
- const stale=!d.last_frame || (Date.parse(d.server_time)-Date.parse(d.last_frame)>15000);
-
- el('status').textContent=stale?'映像未処理・停止中、または処理に時間がかかっています':d.status;
-
- el('connection').textContent='ページ接続中';
-
- }catch(e){el('connection').textContent='接続切れ：表示は最後に取得した値です';el('status').textContent='PCとWi-Fiの接続を確認してください';}
-
- finally{clearTimeout(timer);setTimeout(refresh,2000);}
-
-}refresh();
-
-</script></html>'''
+PAGE = (Path(__file__).with_name("web") / "local" / "index.html").read_text(encoding="utf-8")
 
 def create_app(store, allowed_subnet=None):
 
-    from flask import Flask, request, abort, jsonify
+    from flask import Flask, request, abort, jsonify, send_from_directory
 
-    app = Flask(__name__, static_folder=None)
+    app = Flask(__name__, static_folder=str(Path(__file__).with_name("web") / "local"), static_url_path="/assets")
 
     network = ipaddress.ip_network(allowed_subnet, strict=False) if allowed_subnet else None
 
@@ -606,13 +565,15 @@ def create_app(store, allowed_subnet=None):
 
         response.headers['X-Frame-Options'] = 'DENY'
 
+        response.headers['Content-Security-Policy'] = "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'"
+
         return response
 
     @app.get('/')
 
     def index():
 
-        return PAGE
+        return send_from_directory(Path(__file__).with_name("web") / "local", "index.html")
 
     @app.get('/api/counts')
 
@@ -643,6 +604,8 @@ if __name__ == '__main__':
     parser.add_argument('--host', default='127.0.0.1', help='LAN公開時はPCのLAN内IPv4を指定')
 
     parser.add_argument('--port', type=int, default=8000)
+
+    parser.add_argument('--gate-id', choices=('gate-1', 'gate-2'), help='指定すると人数を公開サイトへ自動送信')
 
     parser.add_argument('--allow-subnet', help='許可LANのCIDR。例: 192.168.11.0/24（実際の設定に合わせる）')
 
@@ -680,7 +643,17 @@ if __name__ == '__main__':
 
     print(f'[DATA] {Path(args.db).resolve()}')
 
+    uploader = None
+
     try:
+
+        if args.gate_id:
+
+            upload_env = os.environ.copy()
+
+            upload_env.setdefault('COUNTER_UPLOAD_URL', 'https://counter.gidaisai.jp/api/upload')
+
+            uploader = subprocess.Popen([sys.executable, str(Path(__file__).with_name('counter-cloud') / 'upload_counts.py'), '--gate-id', args.gate_id, '--port', str(args.port)], env=upload_env)
 
         if args.web_only:
 
@@ -703,6 +676,20 @@ if __name__ == '__main__':
         pass
 
     finally:
+
+        if uploader and uploader.poll() is None:
+
+            uploader.terminate()
+
+            try:
+
+                uploader.wait(timeout=5)
+
+            except subprocess.TimeoutExpired:
+
+                uploader.kill()
+
+                uploader.wait()
 
         store.status('停止')
 

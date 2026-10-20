@@ -1,36 +1,32 @@
 {
-	"name": "gidaisai-counter",
-	"main": "src/index.js",
-	"compatibility_date": "2026-10-01",
-	"workers_dev": false,
-	"preview_urls": false,
-	"routes": [
-		{
-			"pattern": "counter.girasu.dev",
-			"custom_domain": true
-		},
-		{
-			"pattern": "counter-ingest.girasu.dev",
-			"custom_domain": true
-		}
-	],
-	"vars": {
-		"VIEW_HOST": "counter.girasu.dev",
-		"INGEST_HOST": "counter-ingest.girasu.dev",
-		"TEAM_DOMAIN": "https://REPLACE.cloudflareaccess.com",
-		"ACCESS_AUD": "REPLACE"
-	},
-	"d1_databases": [
-		{
-			"binding": "DB",
-			"database_name": "gidaisai-counter",
-			"database_id": "REPLACE",
-			"migrations_dir": "migrations"
-		},
-		{
-			"binding": "B",
-			"database_name": "gidaisai-counter",
-			"database_id": "0a0996ac-2243-42d5-8837-84ce876ca1de"
-		}
-	]
+  "name": "gidaisai-counter",
+  "main": "src/index.js",
+  "compatibility_date": "2026-10-01",
+  "workers_dev": false,
+  "preview_urls": false,
+  "routes": [
+    {
+      "pattern": "counter.gidaisai.jp",
+      "custom_domain": true
+    }
+  ],
+  "vars": {
+    "VIEW_HOST": "counter.gidaisai.jp",
+    "INGEST_HOST": "counter.gidaisai.jp"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "gidaisai-counter",
+      "database_id": "05ab6262-44ba-45fa-a2d1-a42fca4b04f2",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "account_id": "e15c7dbd45d21841da2cae3644b4d245",
+  "assets": {
+    "directory": "./public",
+    "run_worker_first": [
+      "/api/*"
+    ]
+  }
 }

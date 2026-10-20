@@ -1,5 +1,6 @@
 export function validate(d, now = Date.now()) {
   if (!d || typeof d !== 'object' || Array.isArray(d)) return null;
+  if (!['gate-1','gate-2'].includes(d.gate_id)) return null;
   if (!/^\d{4}-\d{2}-\d{2}$/.test(d.date)) return null;
   for (const k of ['enter','exit']) if (!Number.isSafeInteger(d[k]) || d[k]<0 || d[k]>10000000) return null;
   if (d.current !== d.enter-d.exit) return null;
@@ -11,6 +12,6 @@ export function validate(d, now = Date.now()) {
   for (const k of ['last_frame','last_event']) {
     if (d[k] !== null && (typeof d[k] !== 'string' || !Number.isFinite(Date.parse(d[k])) || Date.parse(d[k])>captured+1000)) return null;
   }
-  return {date:d.date, enter:d.enter, exit:d.exit, current:d.current, status:d.status,
+  return {gate_id:d.gate_id, date:d.date, enter:d.enter, exit:d.exit, current:d.current, status:d.status,
     last_frame:d.last_frame, last_event:d.last_event, server_time:d.server_time};
 }

@@ -2,6 +2,7 @@
 import getpass
 import json
 import os
+import argparse
 import time
 import urllib.request
 import urllib.error
@@ -12,7 +13,11 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
         return None
 
 def main():
-    url = os.environ.get('COUNTER_UPLOAD_URL', '').strip()
+    parser = argparse.ArgumentParser(description='ゲートごとの人数をクラウドへ送信')
+    parser.add_argument('--gate-id', required=True, choices=['gate-1', 'gate-2'])
+    parser.add_argument('--port', type=int, default=8000, choices=range(1, 65536), metavar='PORT')
+    args = parser.parse_args()
+    url = os.environ.get('COUNTER_UPLOAD_URL', 'https://counter.gidaisai.jp/api/upload').strip()
     parsed = urlsplit(url)
     if parsed.scheme != 'https' or not parsed.hostname or parsed.username or parsed.password or parsed.path != '/api/upload' or parsed.query or parsed.fragment:
         raise SystemExit('COUNTER_UPLOAD_URL に https://送信先/api/upload を指定してください')
@@ -23,10 +28,11 @@ def main():
     print('[UPLOAD] 10秒間隔で人数を送信します。終了: Ctrl+C')
     while True:
         try:
-            with opener.open('http://127.0.0.1:8000/api/counts', timeout=3) as r:
+            with opener.open(f'http://127.0.0.1:{args.port}/api/counts', timeout=3) as r:
                 d = json.loads(r.read(16385))
             # Explicit allowlist: never send camera credentials, images or tracker IDs.
             payload = {k: d[k] for k in ('date','enter','exit','current','status','last_frame','last_event','server_time')}
+            payload['gate_id'] = args.gate_id
             req = urllib.request.Request(url, data=json.dumps(payload).encode(), method='POST', headers={
                 'Content-Type':'application/json', 'Authorization':'Bearer '+token})
             with opener.open(req, timeout=5) as r:
